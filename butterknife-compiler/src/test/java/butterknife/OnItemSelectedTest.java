@@ -20,39 +20,24 @@ public class OnItemSelectedTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
-        + "\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import android.widget.AdapterView;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'doStuff'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'doStuff'\");\n"
         + "    view1 = view;\n"
         + "    ((AdapterView<?>) view).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {\n"
         + "      @Override\n"
@@ -65,6 +50,7 @@ public class OnItemSelectedTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    ((AdapterView<?>) view1).setOnItemSelectedListener(null);\n"
@@ -75,10 +61,11 @@ public class OnItemSelectedTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void nonDefaultMethod() {
@@ -93,37 +80,24 @@ public class OnItemSelectedTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import android.widget.AdapterView;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'doStuff'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'doStuff'\");\n"
         + "    view1 = view;\n"
         + "    ((AdapterView<?>) view).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {\n"
         + "      @Override\n"
@@ -136,6 +110,7 @@ public class OnItemSelectedTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    ((AdapterView<?>) view1).setOnItemSelectedListener(null);\n"
@@ -146,10 +121,11 @@ public class OnItemSelectedTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void allMethods() {
@@ -166,37 +142,24 @@ public class OnItemSelectedTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import android.widget.AdapterView;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'onItemSelected' and method 'onNothingSelected'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'onItemSelected' and method 'onNothingSelected'\");\n"
         + "    view1 = view;\n"
         + "    ((AdapterView<?>) view).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {\n"
         + "      @Override\n"
@@ -210,6 +173,7 @@ public class OnItemSelectedTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    ((AdapterView<?>) view1).setOnItemSelectedListener(null);\n"
@@ -220,10 +184,11 @@ public class OnItemSelectedTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void multipleBindingPermutation() {
@@ -240,39 +205,26 @@ public class OnItemSelectedTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import android.widget.AdapterView;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
         + "  private View view2;\n"
         + "  private View view3;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'onItemSelected' and method 'onNothingSelected'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'onItemSelected' and method 'onNothingSelected'\");\n"
         + "    view1 = view;\n"
         + "    ((AdapterView<?>) view).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {\n"
         + "      @Override\n"
@@ -284,7 +236,7 @@ public class OnItemSelectedTest {
         + "        target.onNothingSelected();\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 2, \"method 'onItemSelected'\");\n"
+        + "    view = Utils.findRequiredView(source, 2, \"method 'onItemSelected'\");\n"
         + "    view2 = view;\n"
         + "    ((AdapterView<?>) view).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {\n"
         + "      @Override\n"
@@ -295,7 +247,7 @@ public class OnItemSelectedTest {
         + "      public void onNothingSelected(AdapterView<?> p0) {\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 3, \"method 'onNothingSelected'\");\n"
+        + "    view = Utils.findRequiredView(source, 3, \"method 'onNothingSelected'\");\n"
         + "    view3 = view;\n"
         + "    ((AdapterView<?>) view).setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {\n"
         + "      @Override\n"
@@ -308,6 +260,7 @@ public class OnItemSelectedTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    ((AdapterView<?>) view1).setOnItemSelectedListener(null);\n"
@@ -322,9 +275,10 @@ public class OnItemSelectedTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 }

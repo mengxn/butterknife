@@ -19,34 +19,53 @@ public class BindArrayTest {
         + "}"
     );
 
-    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
+    JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
+        + "// Generated code from Butter Knife. Do not modify!\n"
         + "package test;\n"
+        + "import android.content.Context;\n"
         + "import android.content.res.Resources;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
+        + "import java.lang.Deprecated;\n"
+        + "import java.lang.IllegalStateException;\n"
         + "import java.lang.Override;\n"
         + "import java.lang.SuppressWarnings;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    Resources res = finder.getContext(source).getResources();\n"
-        + "    bindToTarget(target, res);\n"
-        + "    return Unbinder.EMPTY;\n"
+        + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
+        + "  protected T target;\n"
+        + "  /**\n"
+        + "   * @deprecated Use {@link #Test_ViewBinding(T, Context)} for direct creation.\n"
+        + "   *     Only present for runtime invocation through {@code ButterKnife.bind()}.\n"
+        + "   */\n"
+        + "  @Deprecated\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
+        + "    this(target, source.getContext());\n"
         + "  }\n"
+        + "  @UiThread\n"
         + "  @SuppressWarnings(\"ResourceType\")\n"
-        + "  public static void bindToTarget(Test target, Resources res) {\n"
+        + "  public Test_ViewBinding(T target, Context context) {\n"
+        + "    this.target = target;\n"
+        + "    Resources res = context.getResources();\n"
         + "    target.one = res.getStringArray(1);\n"
+        + "  }\n"
+        + "  @Override\n"
+        + "  @CallSuper\n"
+        + "  public void unbind() {\n"
+        + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
+        + "    this.target = null;\n"
         + "  }\n"
         + "}"
     );
 
+
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(expectedSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void intArray() throws Exception {
@@ -59,34 +78,52 @@ public class BindArrayTest {
         + "}"
     );
 
-    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
+    JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
+        + "// Generated code from Butter Knife. Do not modify!\n"
         + "package test;\n"
+        + "import android.content.Context;\n"
         + "import android.content.res.Resources;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
+        + "import java.lang.Deprecated;\n"
+        + "import java.lang.IllegalStateException;\n"
         + "import java.lang.Override;\n"
         + "import java.lang.SuppressWarnings;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    Resources res = finder.getContext(source).getResources();\n"
-        + "    bindToTarget(target, res);\n"
-        + "    return Unbinder.EMPTY;\n"
+        + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
+        + "  protected T target;\n"
+        + "  /**\n"
+        + "   * @deprecated Use {@link #Test_ViewBinding(T, Context)} for direct creation.\n"
+        + "   *     Only present for runtime invocation through {@code ButterKnife.bind()}.\n"
+        + "   */\n"
+        + "  @Deprecated\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
+        + "    this(target, source.getContext());\n"
         + "  }\n"
+        + "  @UiThread\n"
         + "  @SuppressWarnings(\"ResourceType\")\n"
-        + "  public static void bindToTarget(Test target, Resources res) {\n"
+        + "  public Test_ViewBinding(T target, Context context) {\n"
+        + "    this.target = target;\n"
+        + "    Resources res = context.getResources();\n"
         + "    target.one = res.getIntArray(1);\n"
+        + "  }\n"
+        + "  @Override\n"
+        + "  @CallSuper\n"
+        + "  public void unbind() {\n"
+        + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
+        + "    this.target = null;\n"
         + "  }\n"
         + "}"
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(expectedSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void textArray() throws Exception {
@@ -99,34 +136,52 @@ public class BindArrayTest {
         + "}"
     );
 
-    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
+    JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
+        + "// Generated code from Butter Knife. Do not modify!\n"
         + "package test;\n"
+        + "import android.content.Context;\n"
         + "import android.content.res.Resources;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
+        + "import java.lang.Deprecated;\n"
+        + "import java.lang.IllegalStateException;\n"
         + "import java.lang.Override;\n"
         + "import java.lang.SuppressWarnings;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    Resources res = finder.getContext(source).getResources();\n"
-        + "    bindToTarget(target, res);\n"
-        + "    return Unbinder.EMPTY;\n"
+        + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
+        + "  protected T target;\n"
+        + "  /**\n"
+        + "   * @deprecated Use {@link #Test_ViewBinding(T, Context)} for direct creation.\n"
+        + "   *     Only present for runtime invocation through {@code ButterKnife.bind()}.\n"
+        + "   */\n"
+        + "  @Deprecated\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
+        + "    this(target, source.getContext());\n"
         + "  }\n"
+        + "  @UiThread\n"
         + "  @SuppressWarnings(\"ResourceType\")\n"
-        + "  public static void bindToTarget(Test target, Resources res) {\n"
+        + "  public Test_ViewBinding(T target, Context context) {\n"
+        + "    this.target = target;\n"
+        + "    Resources res = context.getResources();\n"
         + "    target.one = res.getTextArray(1);\n"
+        + "  }\n"
+        + "  @Override\n"
+        + "  @CallSuper\n"
+        + "  public void unbind() {\n"
+        + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
+        + "    this.target = null;\n"
         + "  }\n"
         + "}"
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(expectedSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void typedArray() throws Exception {
@@ -140,34 +195,52 @@ public class BindArrayTest {
         + "}"
     );
 
-    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
+    JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
+        + "// Generated code from Butter Knife. Do not modify!\n"
         + "package test;\n"
+        + "import android.content.Context;\n"
         + "import android.content.res.Resources;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
+        + "import java.lang.Deprecated;\n"
+        + "import java.lang.IllegalStateException;\n"
         + "import java.lang.Override;\n"
         + "import java.lang.SuppressWarnings;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    Resources res = finder.getContext(source).getResources();\n"
-        + "    bindToTarget(target, res);\n"
-        + "    return Unbinder.EMPTY;\n"
+        + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
+        + "  protected T target;\n"
+        + "  /**\n"
+        + "   * @deprecated Use {@link #Test_ViewBinding(T, Context)} for direct creation.\n"
+        + "   *     Only present for runtime invocation through {@code ButterKnife.bind()}.\n"
+        + "   */\n"
+        + "  @Deprecated\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
+        + "    this(target, source.getContext());\n"
         + "  }\n"
+        + "  @UiThread\n"
         + "  @SuppressWarnings(\"ResourceType\")\n"
-        + "  public static void bindToTarget(Test target, Resources res) {\n"
+        + "  public Test_ViewBinding(T target, Context context) {\n"
+        + "    this.target = target;\n"
+        + "    Resources res = context.getResources();\n"
         + "    target.one = res.obtainTypedArray(1);\n"
+        + "  }\n"
+        + "  @Override\n"
+        + "  @CallSuper\n"
+        + "  public void unbind() {\n"
+        + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
+        + "    this.target = null;\n"
         + "  }\n"
         + "}"
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(expectedSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void typeMustBeSupported() {

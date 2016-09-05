@@ -19,37 +19,24 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'doStuff'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'doStuff'\");\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -59,6 +46,7 @@ public class OnClickTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    view1.setOnClickListener(null);\n"
@@ -69,10 +57,11 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void onClickBindingFinalType() {
@@ -85,37 +74,23 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, final Test target, Object source) {\n"
-        + "    return new Test_ViewBinding(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public final class Test_ViewBinding implements Unbinder {\n"
         + "  private Test target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final Test target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final Test target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'doStuff'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'doStuff'\");\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -135,10 +110,11 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void onClickMultipleBindings() {
@@ -154,38 +130,25 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
         + "  private View view2;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'doStuff1', method 'doStuff2', and method 'doStuff3'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'doStuff1', method 'doStuff2', and method 'doStuff3'\");\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -195,7 +158,7 @@ public class OnClickTest {
         + "        target.doStuff3(p0);\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 2, \"method 'doStuff3'\");\n"
+        + "    view = Utils.findRequiredView(source, 2, \"method 'doStuff3'\");\n"
         + "    view2 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -205,6 +168,7 @@ public class OnClickTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    view1.setOnClickListener(null);\n"
@@ -217,10 +181,11 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void findOnlyCalledOnce() {
@@ -236,37 +201,24 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"field 'view' and method 'doStuff'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"field 'view' and method 'doStuff'\");\n"
         + "    target.view = view;\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
@@ -277,6 +229,7 @@ public class OnClickTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -289,10 +242,11 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void methodVisibility() {
@@ -309,6 +263,7 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings();
   }
@@ -331,31 +286,17 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import android.widget.Button;\n"
         + "import android.widget.TextView;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
@@ -364,10 +305,11 @@ public class OnClickTest {
         + "  private View view2;\n"
         + "  private View view3;\n"
         + "  private View view4;\n"
-        + "  public Test_ViewBinding(final T target, final Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 0, \"method 'click0'\");\n"
+        + "    view = Utils.findRequiredView(source, 0, \"method 'click0'\");\n"
         + "    view0 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -375,7 +317,7 @@ public class OnClickTest {
         + "        target.click0();\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'click1'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'click1'\");\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -383,32 +325,33 @@ public class OnClickTest {
         + "        target.click1(p0);\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 2, \"method 'click2'\");\n"
+        + "    view = Utils.findRequiredView(source, 2, \"method 'click2'\");\n"
         + "    view2 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
         + "      public void doClick(View p0) {\n"
-        + "        target.click2(finder.<TextView>castParam(p0, \"doClick\", 0, \"click2\", 0));\n"
+        + "        target.click2(Utils.<TextView>castParam(p0, \"doClick\", 0, \"click2\", 0));\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 3, \"method 'click3'\");\n"
+        + "    view = Utils.findRequiredView(source, 3, \"method 'click3'\");\n"
         + "    view3 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
         + "      public void doClick(View p0) {\n"
-        + "        target.click3(finder.<Button>castParam(p0, \"doClick\", 0, \"click3\", 0));\n"
+        + "        target.click3(Utils.<Button>castParam(p0, \"doClick\", 0, \"click3\", 0));\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 4, \"method 'click4'\");\n"
+        + "    view = Utils.findRequiredView(source, 4, \"method 'click4'\");\n"
         + "    view4 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
         + "      public void doClick(View p0) {\n"
-        + "        target.click4(finder.<Test.TestInterface>castParam(p0, \"doClick\", 0, \"click4\", 0));\n"
+        + "        target.click4(Utils.<Test.TestInterface>castParam(p0, \"doClick\", 0, \"click4\", 0));\n"
         + "      }\n"
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    view0.setOnClickListener(null);\n"
@@ -427,10 +370,11 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void methodWithMultipleIds() {
@@ -444,39 +388,26 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
         + "  private View view2;\n"
         + "  private View view3;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"method 'click'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"method 'click'\");\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -484,7 +415,7 @@ public class OnClickTest {
         + "        target.click();\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 2, \"method 'click'\");\n"
+        + "    view = Utils.findRequiredView(source, 2, \"method 'click'\");\n"
         + "    view2 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -492,7 +423,7 @@ public class OnClickTest {
         + "        target.click();\n"
         + "      }\n"
         + "    });\n"
-        + "    view = finder.findRequiredView(source, 3, \"method 'click'\");\n"
+        + "    view = Utils.findRequiredView(source, 3, \"method 'click'\");\n"
         + "    view3 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -502,6 +433,7 @@ public class OnClickTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    view1.setOnClickListener(null);\n"
@@ -516,10 +448,11 @@ public class OnClickTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void nullable() {
@@ -532,37 +465,23 @@ public class OnClickTest {
         + "  @Optional @OnClick(1) void doStuff() {}\n"
         + "}");
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findOptionalView(source, 1);\n"
+        + "    view = source.findViewById(1);\n"
         + "    if (view != null) {\n"
         + "      view1 = view;\n"
         + "      view.setOnClickListener(new DebouncingOnClickListener() {\n"
@@ -574,6 +493,7 @@ public class OnClickTest {
         + "    }\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
         + "    if (view1 != null) {\n"
@@ -590,7 +510,7 @@ public class OnClickTest {
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void optionalAndRequiredSkipsNullCheck() {
@@ -607,37 +527,24 @@ public class OnClickTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"field 'view'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"field 'view'\");\n"
         + "    target.view = view;\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
@@ -648,6 +555,7 @@ public class OnClickTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -664,7 +572,7 @@ public class OnClickTest {
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void failsInJavaPackage() {

@@ -20,38 +20,54 @@ public class BindDrawableTest {
         + "}"
     );
 
-    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
+    JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
+        + "// Generated code from Butter Knife. Do not modify!\n"
         + "package test;\n"
         + "import android.content.Context;\n"
         + "import android.content.res.Resources;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
         + "import butterknife.internal.Utils;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
+        + "import java.lang.Deprecated;\n"
+        + "import java.lang.IllegalStateException;\n"
         + "import java.lang.Override;\n"
         + "import java.lang.SuppressWarnings;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    Context context = finder.getContext(source);\n"
+        + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
+        + "  protected T target;\n"
+        + "  /**\n"
+        + "   * @deprecated Use {@link #Test_ViewBinding(T, Context)} for direct creation.\n"
+        + "   *     Only present for runtime invocation through {@code ButterKnife.bind()}.\n"
+        + "   */\n"
+        + "  @Deprecated\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
+        + "    this(target, source.getContext());\n"
+        + "  }\n"
+        + "  @UiThread\n"
+        + "  @SuppressWarnings(\"ResourceType\")\n"
+        + "  public Test_ViewBinding(T target, Context context) {\n"
+        + "    this.target = target;\n"
         + "    Resources res = context.getResources();\n"
         + "    Resources.Theme theme = context.getTheme();\n"
-        + "    bindToTarget(target, res, theme);\n"
-        + "    return Unbinder.EMPTY;\n"
-        + "  }\n"
-        + "  @SuppressWarnings(\"ResourceType\")\n"
-        + "  public static void bindToTarget(Test target, Resources res, Resources.Theme theme) {\n"
         + "    target.one = Utils.getDrawable(res, theme, 1);\n"
+        + "  }\n"
+        + "  @Override\n"
+        + "  @CallSuper\n"
+        + "  public void unbind() {\n"
+        + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
+        + "    this.target = null;\n"
         + "  }\n"
         + "}"
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(expectedSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void withTint() {
@@ -65,38 +81,54 @@ public class BindDrawableTest {
         + "}"
     );
 
-    JavaFileObject expectedSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
+    JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
+        + "// Generated code from Butter Knife. Do not modify!\n"
         + "package test;\n"
         + "import android.content.Context;\n"
         + "import android.content.res.Resources;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
         + "import butterknife.internal.Utils;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
+        + "import java.lang.Deprecated;\n"
+        + "import java.lang.IllegalStateException;\n"
         + "import java.lang.Override;\n"
         + "import java.lang.SuppressWarnings;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    Context context = finder.getContext(source);\n"
+        + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
+        + "  protected T target;\n"
+        + "  /**\n"
+        + "   * @deprecated Use {@link #Test_ViewBinding(T, Context)} for direct creation.\n"
+        + "   *     Only present for runtime invocation through {@code ButterKnife.bind()}.\n"
+        + "   */\n"
+        + "  @Deprecated\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
+        + "    this(target, source.getContext());\n"
+        + "  }\n"
+        + "  @UiThread\n"
+        + "  @SuppressWarnings(\"ResourceType\")\n"
+        + "  public Test_ViewBinding(T target, Context context) {\n"
+        + "    this.target = target;\n"
         + "    Resources res = context.getResources();\n"
         + "    Resources.Theme theme = context.getTheme();\n"
-        + "    bindToTarget(target, res, theme);\n"
-        + "    return Unbinder.EMPTY;\n"
-        + "  }\n"
-        + "  @SuppressWarnings(\"ResourceType\")\n"
-        + "  public static void bindToTarget(Test target, Resources res, Resources.Theme theme) {\n"
         + "    target.one = Utils.getTintedDrawable(res, theme, 1, 2);\n"
+        + "  }\n"
+        + "  @Override\n"
+        + "  @CallSuper\n"
+        + "  public void unbind() {\n"
+        + "    if (this.target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
+        + "    this.target = null;\n"
         + "  }\n"
         + "}"
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(expectedSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void typeMustBeDrawable() {

@@ -1,8 +1,10 @@
 package butterknife;
 
 import butterknife.compiler.ButterKnifeProcessor;
+import com.google.common.collect.ImmutableList;
 import com.google.testing.compile.JavaFileObjects;
 import javax.tools.JavaFileObject;
+import javax.tools.StandardLocation;
 import org.junit.Test;
 
 import static com.google.common.truth.Truth.assertAbout;
@@ -22,35 +24,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -61,10 +52,47 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
+  }
+
+  @Test public void bindingGeneratedView() {
+    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
+        + "package test;\n"
+        + "import android.app.Activity;\n"
+        + "import butterknife.BindView;\n"
+        + "@PerformGeneration\n"
+        + "public class Test extends Activity {\n"
+        + "    @BindView(1) GeneratedView thing;\n"
+        + "}"
+    );
+
+    // w/o the GeneratingProcessor it can't find `class GeneratedView`
+    assertAbout(javaSources()).that(ImmutableList.of(source, TestGeneratingProcessor.ANNOTATION))
+        .processedWith(new ButterKnifeProcessor())
+        .failsToCompile()
+        .withErrorContaining("cannot find symbol");
+
+    // now the GeneratingProcessor should let it compile
+    assertAbout(javaSources()).that(ImmutableList.of(source, TestGeneratingProcessor.ANNOTATION))
+        .processedWith(new ButterKnifeProcessor(), new TestGeneratingProcessor("GeneratedView",
+            "package test;",
+            "import android.content.Context;",
+            "import android.view.View;",
+            "public class GeneratedView extends View {",
+            "  public GeneratedView(Context context) {",
+            "    super(context);",
+            "  }",
+            "}"
+        ))
+        .compilesWithoutError()
+        .withNoteContaining("@BindView field with unresolved type (GeneratedView)").and()
+        .withNoteContaining("must elsewhere be generated as a View or interface").and()
+        .and()
+        .generatesFileNamed(StandardLocation.CLASS_OUTPUT, "test", "Test_ViewBinding.class");
   }
 
   @Test public void bindingViewFinalClass() {
@@ -78,33 +106,20 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public final class Test_ViewBinding implements Unbinder {\n"
         + "  private Test target;\n"
-        + "  public Test_ViewBinding(Test target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(Test target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
         + "  public void unbind() {\n"
@@ -117,10 +132,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void bindingViewFinalClassWithBaseClass() {
@@ -142,35 +158,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderBaseSource = JavaFileObjects.forSourceString("test/Base_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Base_ViewBinder implements ViewBinder<Base> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Base target, Object source) {\n"
-        + "    return new Base_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingBaseSource = JavaFileObjects.forSourceString("test/Base_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Base_ViewBinding<T extends Base> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Base_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Base_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -180,30 +185,17 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderTestSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingTestSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import java.lang.Object;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.Override;\n"
         + "public final class Test_ViewBinding extends Base_ViewBinding<Test> {\n"
-        + "  public Test_ViewBinding(Test target, Finder finder, Object source) {\n"
-        + "    super(target, finder, source);\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(Test target, View source) {\n"
+        + "    super(target, source);\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
         + "  public void unbind() {\n"
@@ -215,10 +207,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSources()).that(asList(baseSource, testSource))
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderBaseSource, bindingBaseSource, binderTestSource, bindingTestSource);
+        .generatesSources(bindingBaseSource, bindingTestSource);
   }
 
   @Test public void bindingViewInnerClass() {
@@ -234,35 +227,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Outer$Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Outer$Test_ViewBinder implements ViewBinder<Outer.Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Outer.Test target, Object source) {\n"
-        + "    return new Outer$Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Outer$Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Outer$Test_ViewBinding<T extends Outer.Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Outer$Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Outer$Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -273,10 +255,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void bindingViewUppercasePackageName() {
@@ -290,35 +273,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package com.Example;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package com.Example;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -329,10 +301,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void bindingInterface() throws Exception {
@@ -347,35 +320,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredViewAsType(source, 1, \"field 'thing'\", Test.TestInterface.class);\n"
+        + "    target.thing = Utils.findRequiredViewAsType(source, 1, \"field 'thing'\", Test.TestInterface.class);\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -386,10 +348,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void genericType() {
@@ -404,36 +367,25 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import android.widget.TextView;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.thing = finder.findRequiredViewAsType(source, 1, \"field 'thing'\", TextView.class);\n"
+        + "    target.thing = Utils.findRequiredViewAsType(source, 1, \"field 'thing'\", TextView.class);\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -444,12 +396,13 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         // found raw type: test.Test
         //   missing type arguments for generic class test.Test<T>
         .compilesWithoutError()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void oneFindPerId() {
@@ -465,37 +418,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"field 'thing1' and method 'doStuff'\");\n"
+        + "    view = Utils.findRequiredView(source, 1, \"field 'thing1' and method 'doStuff'\");\n"
         + "    target.thing1 = view;\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
@@ -506,6 +446,7 @@ public class BindViewTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -518,10 +459,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void oneFindPerIdWithCast() {
@@ -537,39 +479,26 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
         + "import android.view.View;\n"
         + "import android.widget.Button;\n"
         + "import butterknife.Unbinder;\n"
         + "import butterknife.internal.DebouncingOnClickListener;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
         + "  private View view1;\n"
-        + "  public Test_ViewBinding(final T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(final T target, View source) {\n"
         + "    this.target = target;\n"
         + "    View view;\n"
-        + "    view = finder.findRequiredView(source, 1, \"field 'thing1' and method 'doStuff'\");\n"
-        + "    target.thing1 = finder.castView(view, 1, \"field 'thing1'\", Button.class);\n"
+        + "    view = Utils.findRequiredView(source, 1, \"field 'thing1' and method 'doStuff'\");\n"
+        + "    target.thing1 = Utils.castView(view, 1, \"field 'thing1'\", Button.class);\n"
         + "    view1 = view;\n"
         + "    view.setOnClickListener(new DebouncingOnClickListener() {\n"
         + "      @Override\n"
@@ -579,6 +508,7 @@ public class BindViewTest {
         + "    });\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -591,10 +521,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutError()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void fieldVisibility() {
@@ -611,6 +542,7 @@ public class BindViewTest {
     );
 
     assertAbout(javaSource()).that(source)
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings();
   }
@@ -627,35 +559,23 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binderSource = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject bindingSource = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.view = finder.findOptionalView(source, 1);\n"
+        + "    target.view = source.findViewById(1);\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -670,7 +590,7 @@ public class BindViewTest {
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binderSource, bindingSource);
+        .generatesSources(bindingSource);
   }
 
   @Test public void superclass() {
@@ -699,35 +619,24 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binder1Source = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject binding1Source = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.view = finder.findRequiredView(source, 1, \"field 'view'\");\n"
+        + "    target.view = Utils.findRequiredView(source, 1, \"field 'view'\");\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -737,30 +646,17 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binder2Source = JavaFileObjects.forSourceString("test/TestOne_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class TestOne_ViewBinder implements ViewBinder<TestOne> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, TestOne target, Object source) {\n"
-        + "    return new TestOne_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject binding2Source = JavaFileObjects.forSourceString("test/TestOne_ViewBinding", ""
         + "package test;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import java.lang.Object;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.Override;\n"
         + "public class TestOne_ViewBinding<T extends TestOne> extends Test_ViewBinding<T> {\n"
-        + "  public TestOne_ViewBinding(T target, Finder finder, Object source) {\n"
-        + "    super(target, finder, source);\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "  @UiThread\n"
+        + "  public TestOne_ViewBinding(T target, View source) {\n"
+        + "    super(target, source);\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
         + "  public void unbind() {\n"
@@ -772,10 +668,11 @@ public class BindViewTest {
     );
 
     assertAbout(javaSources()).that(asList(source1, source2, source3))
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         .compilesWithoutWarnings()
         .and()
-        .generatesSources(binder1Source, binding1Source, binder2Source, binding2Source);
+        .generatesSources(binding1Source, binding2Source);
   }
 
   @Test public void genericSuperclass() {
@@ -803,35 +700,25 @@ public class BindViewTest {
         + "public class TestTwo extends Test<Object> {\n"
         + "}"
     );
-    JavaFileObject binder1Source = JavaFileObjects.forSourceString("test/Test_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class Test_ViewBinder implements ViewBinder<Test> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, Test target, Object source) {\n"
-        + "    return new Test_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
 
     JavaFileObject binding1Source = JavaFileObjects.forSourceString("test/Test_ViewBinding", ""
         + "package test;\n"
+        + "import android.support.annotation.CallSuper;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
         + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.IllegalStateException;\n"
-        + "import java.lang.Object;\n"
         + "import java.lang.Override;\n"
         + "public class Test_ViewBinding<T extends Test> implements Unbinder {\n"
         + "  protected T target;\n"
-        + "  public Test_ViewBinding(T target, Finder finder, Object source) {\n"
+        + "  @UiThread\n"
+        + "  public Test_ViewBinding(T target, View source) {\n"
         + "    this.target = target;\n"
-        + "    target.view = finder.findRequiredView(source, 1, \"field 'view'\");\n"
+        + "    target.view = Utils.findRequiredView(source, 1, \"field 'view'\");\n"
         + "  }\n"
         + "  @Override\n"
+        + "  @CallSuper\n"
         + "  public void unbind() {\n"
         + "    T target = this.target;\n"
         + "    if (target == null) throw new IllegalStateException(\"Bindings already cleared.\");\n"
@@ -841,30 +728,17 @@ public class BindViewTest {
         + "}"
     );
 
-    JavaFileObject binder2Source = JavaFileObjects.forSourceString("test/TestOne_ViewBinder", ""
-        + "package test;\n"
-        + "import butterknife.Unbinder;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import butterknife.internal.ViewBinder;\n"
-        + "import java.lang.Object;\n"
-        + "import java.lang.Override;\n"
-        + "public final class TestOne_ViewBinder implements ViewBinder<TestOne> {\n"
-        + "  @Override\n"
-        + "  public Unbinder bind(Finder finder, TestOne target, Object source) {\n"
-        + "    return new TestOne_ViewBinding<>(target, finder, source);\n"
-        + "  }\n"
-        + "}"
-    );
-
     JavaFileObject binding2Source = JavaFileObjects.forSourceString("test/TestOne_ViewBinding", ""
         + "package test;\n"
-        + "import butterknife.internal.Finder;\n"
-        + "import java.lang.Object;\n"
+        + "import android.support.annotation.UiThread;\n"
+        + "import android.view.View;\n"
+        + "import butterknife.internal.Utils;\n"
         + "import java.lang.Override;\n"
         + "public class TestOne_ViewBinding<T extends TestOne> extends Test_ViewBinding<T> {\n"
-        + "  public TestOne_ViewBinding(T target, Finder finder, Object source) {\n"
-        + "    super(target, finder, source);\n"
-        + "    target.thing = finder.findRequiredView(source, 1, \"field 'thing'\");\n"
+        + "  @UiThread\n"
+        + "  public TestOne_ViewBinding(T target, View source) {\n"
+        + "    super(target, source);\n"
+        + "    target.thing = Utils.findRequiredView(source, 1, \"field 'thing'\");\n"
         + "  }\n"
         + "  @Override\n"
         + "  public void unbind() {\n"
@@ -876,12 +750,13 @@ public class BindViewTest {
     );
 
     assertAbout(javaSources()).that(asList(source1, source2, source3))
+        .withCompilerOptions("-Xlint:-processing")
         .processedWith(new ButterKnifeProcessor())
         // found raw type: test.Test
         //   missing type arguments for generic class test.Test<T>
         .compilesWithoutError()
         .and()
-        .generatesSources(binder1Source, binding1Source, binder2Source, binding2Source);
+        .generatesSources(binding1Source, binding2Source);
   }
 
   @Test public void failsInJavaPackage() {
@@ -1032,31 +907,6 @@ public class BindViewTest {
         .in(source).onLine(7);
   }
 
-  @Test public void failsRootViewBindingWithBadTarget() throws Exception {
-    JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
-        + "package test;\n"
-        + "import android.content.Context;\n"
-        + "import android.view.View;\n"
-        + "import butterknife.OnItemClick;\n"
-        + "public class Test extends View {\n"
-        + "  @OnItemClick void doStuff() {}\n"
-        + "  public Test(Context context) {\n"
-        + "    super(context);\n"
-        + "  }\n"
-        + "}"
-    );
-
-    assertAbout(javaSource())
-        .that(source)
-        .processedWith(new ButterKnifeProcessor())
-        .failsToCompile()
-        .withErrorContaining(
-            "@OnItemClick annotation without an ID may only be used with an object of type "
-                + "\"android.widget.AdapterView<?>\" or an interface. (test.Test.doStuff)")
-        .in(source)
-        .onLine(6);
-  }
-
   @Test public void failsOptionalRootViewBinding() throws Exception {
     JavaFileObject source = JavaFileObjects.forSourceString("test.Test", ""
         + "package test;\n"
@@ -1081,4 +931,5 @@ public class BindViewTest {
         .in(source)
         .onLine(7);
   }
+
 }

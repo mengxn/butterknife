@@ -28,8 +28,9 @@ android {
   }
 
   buildTypes {
-    debug {
+    release {
       minifyEnabled true
+      proguardFile getDefaultProguardFile('proguard-android.txt')
     }
   }
 }
@@ -41,4 +42,5 @@ dependencies {
   testCompile deps.junit
   testCompile deps.truth
   testCompile deps.robolectric
+  testCompile deps.openglApi
 }
